@@ -60,19 +60,6 @@ class SSMWrapper:
         )
         return parser.parse_args()
     
-    def _raise_if_none(self, value, default_value, error_message):
-        """
-        Return value if it is not None. If value is None, return default_value if it is not None.
-        If default_Value is also None, raise an error.
-        """
-        if value is not None:
-            return value
-        elif default_value is not None:
-            return default_value
-        else:
-            io.log_error(error_message)
-            sys.exit()
-    
     def ssh(self):
         if self.region:
             aws.set_region(self.region)
