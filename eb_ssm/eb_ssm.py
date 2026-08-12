@@ -90,10 +90,16 @@ class SSMWrapper:
             "aws", "ssm", "start-session",
             "--document-name", "AWS-StartInteractiveCommand",
             "--parameters", "command='" + self.command + "'",
-            "--profile", self.profile,
-            "--region", self.region,
-            "--target", instance,
         ]
+
+        if self.profile:
+            params.extend(["--profile", self.profile])
+
+        if self.region:
+            params.extend(["--region", self.region])
+
+        params.extend(["--target", instance])
+
         cmd = " ".join(params)
         os.system(cmd)
 
