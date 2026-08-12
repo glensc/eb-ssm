@@ -20,16 +20,8 @@ class SSMWrapper:
         
         # environment_name may be None
         self.environment_name = args.environment_name or get_current_branch_environment()
-        self.profile = self._raise_if_none(
-            args.profile,
-            get_default_profile(),
-            "Please specify a specific profile in the command or eb configuration.",
-        )
-        self.region = self._raise_if_none(
-            args.region,
-            get_default_region(),
-            "Please specify a specific region in the command or eb configuration.",
-        )
+        self.profile = args.profile or get_default_profile()
+        self.region = args.region or get_default_region()
         
         self.command = args.command or DEFAULT_COMMAND
         
@@ -82,8 +74,10 @@ class SSMWrapper:
             sys.exit()
     
     def ssh(self):
-        aws.set_region(self.region)
-        aws.set_profile(self.profile)
+        if self.region:
+            aws.set_region(self.region)
+        if self.profile:
+            aws.set_profile(self.profile)
         
         if self.environment_name is None:
             environment_names = get_all_environment_names()
