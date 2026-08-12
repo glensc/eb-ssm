@@ -1,5 +1,5 @@
 import argparse
-import os
+import subprocess
 import sys
 
 from cement.utils.misc import minimal_logger
@@ -113,8 +113,7 @@ class SSMWrapper:
             "--region", self.region,
             "--target", instance,
         ]
-        cmd = " ".join(params)
-        os.system(cmd)
+        subprocess.run(params)
 
 
 def main():
