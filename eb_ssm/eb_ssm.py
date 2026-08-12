@@ -1,5 +1,6 @@
 import argparse
-import os
+import json
+import subprocess
 import sys
 
 from cement.utils.misc import minimal_logger
@@ -17,7 +18,7 @@ DEFAULT_COMMAND = "bash -l"
 class SSMWrapper:
     def __init__(self):
         args = self._parse_args()
-        
+
         # environment_name may be None
         self.environment_name = args.environment_name or get_current_branch_environment()
         self.profile = self._raise_if_none(
@@ -30,11 +31,10 @@ class SSMWrapper:
             get_default_region(),
             "Please specify a specific region in the command or eb configuration.",
         )
-        
-        self.command = args.command or DEFAULT_COMMAND
-        
-        self.instance_number = args.number
 
+        self.command = args.command or DEFAULT_COMMAND
+
+        self.instance_number = args.number
 
     def _parse_args(self):
         parser = argparse.ArgumentParser(description="SSH onto an Elastic Beanstalk Server")
@@ -67,7 +67,7 @@ class SSMWrapper:
                   "number is provided, you will be prompted to select and instance"),
         )
         return parser.parse_args()
-    
+
     def _raise_if_none(self, value, default_value, error_message):
         """
         Return value if it is not None. If value is None, return default_value if it is not None.
@@ -80,11 +80,11 @@ class SSMWrapper:
         else:
             io.log_error(error_message)
             sys.exit()
-    
+
     def ssh(self):
         aws.set_region(self.region)
         aws.set_profile(self.profile)
-        
+
         if self.environment_name is None:
             environment_names = get_all_environment_names()
             if environment_names:
@@ -94,7 +94,7 @@ class SSMWrapper:
             else:
                 io.log_error("The current Elastic Beanstalk application has no environments")
             sys.exit()
-        
+
         instances = get_instance_ids(self.environment_name)
         if len(instances) == 1:
             self.instance_number = 0
@@ -104,17 +104,20 @@ class SSMWrapper:
             io.echo()
             io.echo('Select an instance to ssh into')
             instance = utils.prompt_for_item_in_list(instances)
-        
-        params = [
+
+        # AWS CLI expects this as a JSON payload for `--parameters`. Passing it as
+        # a shell string breaks when the command contains braces or other shell-like
+        # characters, and using `os.system()` also executes through a shell.
+        parameters = json.dumps({"command": [self.command]})
+        cmd = [
             "aws", "ssm", "start-session",
             "--document-name", "AWS-StartInteractiveCommand",
-            "--parameters", "command='" + self.command + "'",
+            "--parameters", parameters,
             "--profile", self.profile,
             "--region", self.region,
             "--target", instance,
         ]
-        cmd = " ".join(params)
-        os.system(cmd)
+        subprocess.run(cmd)
 
 
 def main():
