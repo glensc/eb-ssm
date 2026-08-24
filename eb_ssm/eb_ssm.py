@@ -14,6 +14,15 @@ LOG = minimal_logger(__name__)
 DEFAULT_COMMAND = "bash -l"
 
 
+def run_interactive_process(params):
+    process = subprocess.Popen(params)
+    while True:
+        try:
+            return process.wait()
+        except KeyboardInterrupt:
+            continue
+
+
 class SSMWrapper:
     def __init__(self):
         args = self._parse_args()
@@ -113,7 +122,7 @@ class SSMWrapper:
             "--region", self.region,
             "--target", instance,
         ]
-        subprocess.run(params)
+        run_interactive_process(params)
 
 
 def main():
